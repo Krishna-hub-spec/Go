@@ -190,7 +190,34 @@ func TestMappingTime(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestMapiingTimeDuration(t *testing.T) {
+type bindTestData struct {
+	need interface{}
+	got  interface{}
+	in   map[string][]string
+}
+
+func TestMappingTimeUnixNano(t *testing.T) {
+	type needFixUnixNanoEmpty struct {
+		CreateTime time.Time `form:"createTime" time_format:"unixNano"`
+	}
+
+	// ok
+	tests := []bindTestData{
+		{need: &needFixUnixNanoEmpty{}, got: &needFixUnixNanoEmpty{}, in: formSource{"createTime": []string{"   "}}},
+		{need: &needFixUnixNanoEmpty{}, got: &needFixUnixNanoEmpty{}, in: formSource{"createTime": []string{}}},
+	}
+
+	for _, v := range tests {
+		err := mapForm(v.got, v.in)
+		assert.NoError(t, err)
+		assert.Equal(t, v.need, v.got)
+	}
+}
+
+func TestMappingTimeDuration(t *testing.T) {
+	type needFixDurationEmpty struct {
+		Duration time.Duration `form:"duration"`
+	}
 	var s struct {
 		D time.Duration
 	}
@@ -200,6 +227,17 @@ func TestMapiingTimeDuration(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 5*time.Second, s.D)
 
+	// ok
+	tests := []bindTestData{
+		{need: &needFixDurationEmpty{}, got: &needFixDurationEmpty{}, in: formSource{"duration": []string{"   "}}},
+		{need: &needFixDurationEmpty{}, got: &needFixDurationEmpty{}, in: formSource{"duration": []string{}}},
+	}
+
+	for _, v := range tests {
+		err := mapForm(v.got, v.in)
+		assert.NoError(t, err)
+		assert.Equal(t, v.need, v.got)
+	}
 	// error
 	err = mappingByPtr(&s, formSource{"D": {"wrong"}}, "form")
 	assert.Error(t, err)
