@@ -187,45 +187,34 @@ func setByForm(value reflect.Value, field reflect.StructField, form map[string][
 	if !ok && !opt.isDefaultExists {
 		return false, nil
 	}
+	if !ok || (ok && len(vs) == 0) { // (ok && len(vs) == 0) should not happen, add for sense of security
+		vs = []string{opt.defaultValue}
+	}
+
+	if setCustomOk, setCustomErr := trySetCustom(vs[0], value); setCustomOk {
+		return true, setCustomErr
+	}
 
 	switch value.Kind() {
 	case reflect.Slice:
-		if !ok {
-			vs = []string{opt.defaultValue}
-		}
-
-		if ok, err = trySetCustom(vs[0], value); ok {
-			return ok, err
-		}
-
 		return true, setSlice(vs, value, field)
 	case reflect.Array:
-		if !ok {
-			vs = []string{opt.defaultValue}
-		}
-
-		if ok, err = trySetCustom(vs[0], value); ok {
-			return ok, err
-		}
-
 		if len(vs) != value.Len() {
 			return false, fmt.Errorf("%q is not valid value for %s", vs, value.Type().String())
 		}
-
 		return true, setArray(vs, value, field)
 	default:
-		var val string
-		if !ok {
-			val = opt.defaultValue
+		switch value.Kind() {
+		case reflect.Interface: // if field is any, we can set vs into it directly
+			if len(vs) == 1 {
+				value.Set(reflect.ValueOf(vs[0]))
+			} else {
+				value.Set(reflect.ValueOf(vs))
+			}
+			return true, nil
+		default:
+			return true, setWithProperType(vs[0], value, field)
 		}
-
-		if len(vs) > 0 {
-			val = vs[0]
-		}
-		if ok, err := trySetCustom(val, value); ok {
-			return ok, err
-		}
-		return true, setWithProperType(val, value, field)
 	}
 }
 
@@ -278,6 +267,9 @@ func setWithProperType(val string, value reflect.Value, field reflect.StructFiel
 			value.Set(reflect.New(value.Type().Elem()))
 		}
 		return setWithProperType(val, value.Elem(), field)
+	case reflect.Interface:
+		value.Set(reflect.ValueOf(val))
+		return nil
 	default:
 		return errUnknownType
 	}

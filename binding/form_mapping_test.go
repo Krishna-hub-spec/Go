@@ -220,6 +220,91 @@ func TestMappingTimeDuration(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestMappingAny(t *testing.T) {
+	type sT struct {
+		Value   any
+		PValue  *any
+		PPValue **any
+		DV      any  `form:"dv,default=aa"`
+		DV2     any  `form:"dv2,default=aa2"`
+		DV3     *any `form:"dv3,default=aaa3"`
+	}
+
+	noNil := func(st *sT) bool {
+		if st.PValue == nil || st.PPValue == nil || *(st.PPValue) == nil || st.DV3 == nil {
+			return false
+		}
+		return true
+	}
+
+	var s sT
+	// ok
+	err := mappingByPtr(&s, formSource{"Value": {"1"}, "PValue": {"p1"}, "PPValue": {"pp1"}, "dv2": {"aaa2"}}, "form")
+	assert.NoError(t, err)
+	assert.True(t, noNil(&s))
+	assert.Equal(t, "1", s.Value)
+	assert.Equal(t, "p1", *(s.PValue))
+	assert.Equal(t, "pp1", *(*(s.PPValue)))
+	assert.Equal(t, "aa", s.DV)
+	assert.Equal(t, "aaa2", s.DV2)
+	assert.Equal(t, "aaa3", *(s.DV3))
+
+	var s2 sT
+	// ok
+	err = mappingByPtr(&s2, formSource{"Value": {"1", "a2"}, "PValue": {"p1", "2.0"}, "PPValue": {"pp1", "2.00"}, "dv3": {"3", "33"}}, "form")
+	assert.NoError(t, err)
+	assert.True(t, noNil(&s2))
+	assert.Equal(t, []string{"1", "a2"}, s2.Value)
+	assert.Equal(t, []string{"p1", "2.0"}, *(s2.PValue))
+	assert.Equal(t, []string{"pp1", "2.00"}, *(*(s2.PPValue)))
+	assert.Equal(t, []string{"3", "33"}, *(s2.DV3))
+}
+
+func TestMappingSliceArrayAny(t *testing.T) {
+	var s struct {
+		Values    []any
+		PValues   *[]any
+		PPValues  **[]any
+		AValues   [2]any
+		PAValues  *[2]any
+		PPAValues **[2]any
+	}
+
+	noNil := func() bool {
+		if s.PValues == nil || s.PPValues == nil || *(s.PPValues) == nil {
+			return false
+		}
+		if s.PAValues == nil || s.PPAValues == nil || *(s.PPAValues) == nil {
+			return false
+		}
+		return true
+	}
+
+	// ok
+	err := mappingByPtr(&s,
+		formSource{
+			"Values": {"1"}, "PValues": {"p1"}, "PPValues": {"pp1"},
+			"AValues": {"a1", "a2"}, "PAValues": {"pa1", "pa2"}, "PPAValues": {"ppa1", "ppa2"},
+		}, "form")
+	assert.NoError(t, err)
+	assert.True(t, noNil())
+	assert.Equal(t, []any{"1"}, s.Values)
+	assert.Equal(t, []any{"p1"}, *(s.PValues))
+	assert.Equal(t, []any{"pp1"}, *(*(s.PPValues)))
+
+	assert.Equal(t, [2]any{"a1", "a2"}, s.AValues)
+	assert.Equal(t, [2]any{"pa1", "pa2"}, *(s.PAValues))
+	assert.Equal(t, [2]any{"ppa1", "ppa2"}, *(*(s.PPAValues)))
+
+	// error - not enough vals
+	err = mappingByPtr(&s,
+		formSource{
+			"Values": {"1"}, "PValues": {"p1"}, "PPValues": {"pp1"},
+			"AValues": {"a1", "a2"}, "PAValues": {"pa1"}, "PPAValues": {"ppa1", "ppa2"},
+		}, "form")
+	assert.Error(t, err)
+}
+
 func TestMappingSlice(t *testing.T) {
 	var s struct {
 		Slice []int `form:"slice,default=9"`
