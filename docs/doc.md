@@ -259,6 +259,61 @@ func main() {
 ids: map[b:hello a:1234]; names: map[second:tianou first:thinkerou]
 ```
 
+### Query string param as nested map
+
+#### Map of maps from query string
+
+```sh
+GET /get?page[number]=1&page[size]=50&page[sort][by]=id&page[sort][order]=asc HTTP/1.1
+```
+
+```go
+func main() {
+  router := gin.Default()
+  
+  router.GET("/get", func(c *gin.Context) {
+    
+    paging := c.QueryNestedMap("page")
+    
+    fmt.Printf("paging: %v\n", paging)
+    c.JSON(200, paging)
+  })
+  
+  router.Run(":8080")
+}
+```
+
+```sh
+paging: map[number:1 size:50 sort:map[by:id order:asc]]
+```
+
+#### Arrays as values in nested map
+
+```sh
+GET /get?filter[names][]=alice&filter[names][]=bob&filter[status]=new&filter[status]=old HTTP/1.1
+```
+
+```go
+func main() {
+  router := gin.Default()
+  
+  router.GET("/get", func(c *gin.Context) {
+    
+    filters := c.QueryNestedMap("filter")
+    
+    fmt.Printf("filters: %v\n", filters)
+    c.JSON(200, filters)
+  })
+  
+  router.Run(":8080")
+}
+```
+
+```sh
+filters: map[names:[alice bob] status:new]
+```
+Notice that status has only one value because it is not an explicit array.
+
 ### Upload files
 
 #### Single file

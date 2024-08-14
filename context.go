@@ -21,6 +21,7 @@ import (
 
 	"github.com/gin-contrib/sse"
 	"github.com/gin-gonic/gin/binding"
+	"github.com/gin-gonic/gin/internal/query"
 	"github.com/gin-gonic/gin/render"
 )
 
@@ -502,6 +503,21 @@ func (c *Context) QueryMap(key string) (dicts map[string]string) {
 func (c *Context) GetQueryMap(key string) (map[string]string, bool) {
 	c.initQueryCache()
 	return c.get(c.queryCache, key)
+}
+
+// QueryNestedMap returns a map for a given query key.
+// In contrast to QueryMap it handles nesting in query maps like key[foo][bar]=value.
+func (c *Context) QueryNestedMap(key string) (dicts map[string]interface{}) {
+	dicts, _ = c.GetQueryNestedMap(key)
+	return
+}
+
+// GetQueryNestedMap returns a map for a given query key, plus a boolean value
+// whether at least one value exists for the given key.
+// In contrast to GetQueryMap it handles nesting in query maps like key[foo][bar]=value.
+func (c *Context) GetQueryNestedMap(key string) (map[string]interface{}, bool) {
+	c.initQueryCache()
+	return query.GetMap(c.queryCache, key)
 }
 
 // PostForm returns the specified key from a POST urlencoded form or multipart form
