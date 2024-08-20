@@ -1,0 +1,14 @@
+inputSet:
+  name: Build_Krishna_hub_spec_Go_1724188798178-pr-trigger-input-set
+  identifier: Build_Krishna_hub_spec_Go_1724188798178prtriggerinputset
+  orgIdentifier: default
+  projectIdentifier: GoProject
+  pipeline:
+    identifier: Build_Krishna_hub_spec_Go_1724188798178
+    properties:
+      ci:
+        codebase:
+          build:
+            type: PR
+            spec:
+              number: <+trigger.prNumber>
