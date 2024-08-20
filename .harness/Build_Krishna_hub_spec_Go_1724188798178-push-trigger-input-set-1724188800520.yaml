@@ -1,0 +1,14 @@
+inputSet:
+  name: Build_Krishna_hub_spec_Go_1724188798178-push-trigger-input-set
+  identifier: Build_Krishna_hub_spec_Go_1724188798178pushtriggerinputset
+  orgIdentifier: default
+  projectIdentifier: GoProject
+  pipeline:
+    identifier: Build_Krishna_hub_spec_Go_1724188798178
+    properties:
+      ci:
+        codebase:
+          build:
+            type: branch
+            spec:
+              branch: <+trigger.branch>
